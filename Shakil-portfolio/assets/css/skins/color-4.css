@@ -1,0 +1,9 @@
+:root {
+    --primary-color: rgb(0, 146, 69);
+    --primary-color-alt: hsl(56, 97%, 56%);
+    --linear-gradient: linear-gradient(
+      60deg,
+      rgba(0, 146, 69, 0.95) 34%,
+      hsla(56, 97%, 56%, 0.95)
+    );
+  }
