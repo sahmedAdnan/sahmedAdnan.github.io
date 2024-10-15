@@ -229,7 +229,7 @@ input {
 }
 /*=============== Home ===============*/
 .home{
-  background: url(../img/home_bgg.jpg); /* == Cover Pic */
+  background: url(../img/Cover.jpeg); /* == Cover Pic */
   background-size: cover;
   background-position: 50%;
   padding-top: 5.5rem;
