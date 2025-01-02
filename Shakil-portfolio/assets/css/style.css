@@ -1075,3 +1075,10 @@ input {
     font-size: 1.3rem;
   }
 }
+.flag-counter {
+  position: fixed; /* Fix it relative to the viewport */
+  bottom: 10px;    /* Adjust distance from the bottom */
+  right: 10px;     /* Adjust distance from the right */
+  z-index: 1000;   /* Ensure it stays on top */
+}
+
