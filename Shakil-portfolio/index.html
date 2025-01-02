@@ -261,14 +261,26 @@
 
       <!--=============== Projects ===============-->
       <section class="work section container" id="portfolio">
-        <h2 class="section__title">Projects & Publications_</h2>
+        <h2 class="section__title">Publications_</h2>
         <div class="project__categories">
           <button class="category__btn text-xs active-work" data-filter = "all">ALL</button>
-          <button class="category__btn text-xs" data-filter = ".pub">PUBLICATIONS</button>
-          <button class="category__btn text-xs" data-filter = ".app">MOBILE APPS</button>
+          <button class="category__btn text-xs" data-filter = ".pub">JOURNALS</button>
+          <button class="category__btn text-xs" data-filter = ".app">CONFERENCES</button>
         </div>
 
         <div class="projects__container grid">
+
+          <div class="project__item grid mix app">
+            <img src="assets/img/Multicriteria.png" alt="" class="project__img">
+            <div class="project__data">
+              <h3 class="project__title text-lg">Multicriteria Decision Analysis for Optimal Internet Service Provider Selection Using Calibrated Random Forest</h3>
+              <p class="project__description"> <b>Cite this: </b>M. Mazid-Ul-Haque, S. Ahmed, R. S. Aftab, M. S. U. Miah, W. Akanda and A. Bhowmik, "Multicriteria Decision Analysis for Optimal Internet Service Provider Selection Using Calibrated Random Forest," 2024 Asian Conference on Communication and Networks (ASIANComNet), Bangkok, Thailand, 2024, pp. 1-6, doi: 10.1109/ASIANComNet63184.2024.10811091.</b></p>
+              <ul class="tags text-sm">
+              </ul>
+              <a href="https://ieeexplore.ieee.org/document/10811091" class="project__link text-sm" target="_blank" rel="noopener noreferrer">DOI: 10.1109/ASIANComNet63184.2024.10811091</a>
+            </div>
+          </div>
+
           <div class="project__item grid mix pub">
             <img src="assets/img/project-1.jpg" alt="" class="project__img">
             <div class="project__data">
@@ -304,7 +316,7 @@
             </div>
           </div>
 
-          <div class="project__item grid mix pub">
+          <div class="project__item grid mix app">
             <img src="assets/img/project-3.jpg" alt="" class="project__img">
             <div class="project__data">
               <h3 class="project__title text-lg">An Observation of Vision Based Underwater Object Detection and Tracking</h3>
@@ -316,21 +328,6 @@
                 <li>Edge Detection</li>
               </ul>
               <a href="https://ieeexplore.ieee.org/document/9091752" class="project__link text-sm" target="_blank" rel="noopener noreferrer">DOI: 10.1109/ICETCE48199.2020.9091752</a>
-            </div>
-          </div>
-
-          <div class="project__item grid mix app">
-            <img src="assets/img/collage.jpg" alt="" class="project__img">
-            <div class="project__data">
-              <h3 class="project__title text-lg">Cat Dog Classifier</h3>
-              <p class="project__description">A CNN-based classifier fun app which can classify cat and dog images. To classify an image, please tap on any of the available buttons. This program may assist understanding the potential of Artificial Intelligence.</p>
-              <h4 class="project__stack text-xs">USED STACK:</h4>
-              <ul class="tags text-sm">
-                <li>Python</li>
-                <li>CNN</li>
-                <li>TFLite</li>
-              </ul>
-              <a href="https://play.google.com/store/apps/details?id=com.itgarage.catdogclassify&hl=en&gl=US" class="project__link text-sm" target="_blank" rel="noopener noreferrer">GOOGLE PLAYSTORE</a>
             </div>
           </div>
         </div>
@@ -652,6 +649,12 @@
           </div>
         </div>
       </section>
+      <div class="flag-counter">
+        <a href="https://info.flagcounter.com/NETK">
+          <img src="https://s01.flagcounter.com/count/NETK/bg_FFFFFF/txt_000000/border_121212/columns_2/maxflags_12/viewers_0/labels_0/pageviews_0/flags_0/percent_0/" 
+               alt="Flag Counter" border="0">
+        </a>
+      </div>
     </main>
 
     <!--=============== Style Switcher ===============-->
@@ -685,5 +688,6 @@
 
     <!--=============== Common ===============-->
     <script src="assets/js/common.js"></script>
+    
   </body>
 </html>
