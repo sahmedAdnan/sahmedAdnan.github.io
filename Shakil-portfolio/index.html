@@ -721,7 +721,7 @@ body.is-light .sk-chip:hover{background:var(--accent);color:#fff;border-color:va
           <div class="pr-meta"><span class="venue">Applied Sciences · MDPI</span><span>Journal article</span><span>Q2 · IF 2.838</span></div>
           <span class="pr-title">Att-BiL-SL: Attention-Based Bi-LSTM and Sequential LSTM for Describing Video in the Textual Formation</span>
           <p class="pr-tldr" data-tldr>An attention-based encoder–decoder that combines a bi-directional LSTM with a sequential LSTM to generate natural-language descriptions of video.</p>
-          <div class="pr-concepts" data-concepts></div>
+          <div class="pr-concepts"><span class="pr-chip">Video Captioning</span><span class="pr-chip">Attention Mechanism</span><span class="pr-chip">Bi-LSTM</span><span class="pr-chip">Encoder–Decoder</span></div>
           <span class="pr-doi">DOI · 10.3390/app12010317 ↗</span>
         </div>
         <div class="pr-cites">
@@ -738,7 +738,7 @@ body.is-light .sk-chip:hover{background:var(--accent);color:#fff;border-color:va
           <div class="pr-meta"><span class="venue">IJACSA</span><span>Journal article</span></div>
           <span class="pr-title">Anti-Molestation: An IoT-based Device for Women's Self-Security System to Avoid Unlawful Activities</span>
           <p class="pr-tldr" data-tldr>An IoT-based wearable safety device combining sensors, GPS, and SMS-trigger logic to alert authorities and family during unlawful events.</p>
-          <div class="pr-concepts" data-concepts></div>
+          <div class="pr-concepts"><span class="pr-chip">IoT</span><span class="pr-chip">Wearable Devices</span><span class="pr-chip">Embedded Systems</span><span class="pr-chip">Sensor Fusion</span></div>
           <span class="pr-doi">DOI · 10.14569/IJACSA.2020.0111188 ↗</span>
         </div>
         <div class="pr-cites">
@@ -755,7 +755,7 @@ body.is-light .sk-chip:hover{background:var(--accent);color:#fff;border-color:va
           <div class="pr-meta"><span class="venue">ASIANComNet 2024 · IEEE</span><span>Conference paper</span></div>
           <span class="pr-title">Multicriteria Decision Analysis for Optimal Internet Service Provider Selection Using Calibrated Random Forest</span>
           <p class="pr-tldr" data-tldr>A multicriteria decision-analysis framework using a calibrated Random Forest classifier to recommend optimal ISPs from heterogeneous user-experience signals.</p>
-          <div class="pr-concepts" data-concepts></div>
+          <div class="pr-concepts"><span class="pr-chip">Random Forest</span><span class="pr-chip">MCDA</span><span class="pr-chip">Probability Calibration</span><span class="pr-chip">Network QoS</span></div>
           <span class="pr-doi">DOI · 10.1109/ASIANComNet63184.2024.10811091 ↗</span>
         </div>
         <div class="pr-cites">
@@ -772,7 +772,7 @@ body.is-light .sk-chip:hover{background:var(--accent);color:#fff;border-color:va
           <div class="pr-meta"><span class="venue">ICETCE 2020 · IEEE</span><span>Conference paper</span></div>
           <span class="pr-title">An Observation of Vision-Based Underwater Object Detection and Tracking</span>
           <p class="pr-tldr" data-tldr>A comparative study of vision-based methods for detecting and tracking underwater objects, with discussion of domain-specific challenges and benchmarks.</p>
-          <div class="pr-concepts" data-concepts></div>
+          <div class="pr-concepts"><span class="pr-chip">Object Detection</span><span class="pr-chip">Object Tracking</span><span class="pr-chip">Computer Vision</span><span class="pr-chip">Underwater Imaging</span></div>
           <span class="pr-doi">DOI · 10.1109/ICETCE48199.2020.9091752 ↗</span>
         </div>
         <div class="pr-cites">
@@ -1454,9 +1454,9 @@ lb.addEventListener('click', e => { if (e.target === lb) lb.classList.remove('op
         inf.textContent = '';
       }
     }
-    if (concepts && info.concepts && info.concepts.length) {
-      concepts.innerHTML = info.concepts.map(c => `<span class="pr-chip">${c}</span>`).join('');
-    }
+    // Concepts chips are hand-curated per paper (avoids OpenAlex's loose auto-tagging
+    // that occasionally surfaces unrelated keywords like "Genetic algorithm" on
+    // ML/MCDA papers). Do not overwrite.
     if (tldr && info.tldr) tldr.textContent = info.tldr;
   }
 
