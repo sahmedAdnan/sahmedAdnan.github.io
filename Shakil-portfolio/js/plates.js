@@ -1,5 +1,4 @@
-/* Source images for the particle plates, embedded so canvas sampling works from any origin.
-   Generated from assets/Photo.jpg and the figures in assets/pub-*.jpg. */
+/* Source images for the particle plates, embedded so canvas sampling works from any origin. */
 window.SA = window.SA || {};
 SA.plates = {
  "underwater": {

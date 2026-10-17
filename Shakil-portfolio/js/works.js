@@ -1,7 +1,8 @@
 /* =============================================================
    Publications pipeline
    ORCID decides WHICH works are mine (the record I maintain),
-   OpenAlex adds authors, venues, citations and abstracts.
+   OpenAlex adds authors, venues, citations and abstracts, and
+   Crossref fills in new works OpenAlex has not indexed yet.
    A new work added to ORCID appears here, with its co-authors in
    the network, without touching the site.
    Works in the browser and in Node (tools/snapshot.mjs).
@@ -17,11 +18,12 @@
   // Some repositories store names surname-first; show them the way the people write them.
   const ALIASES = {
     'pedersen christian nørgaard storm': 'Christian N. S. Pedersen',
+    'christian nørgaard storm pedersen': 'Christian N. S. Pedersen',
     'helsing-nielsen flemming': 'Flemming Helsing-Nielsen',
   };
   const alias = (n) => ALIASES[(n || '').toLowerCase().trim()] || n;
   const ME_NAME = 'shakil ahmed';
-  const CACHE_KEY = 'sa-works-v5';
+  const CACHE_KEY = 'sa-works-v6';
   const CACHE_MS = 12 * 3600 * 1000;
   const SELECT = 'id,doi,display_name,publication_year,publication_date,type,cited_by_count,counts_by_year,authorships,primary_location,abstract_inverted_index';
 
@@ -29,7 +31,7 @@
     article: 'Journal article', 'journal-article': 'Journal article',
     'conference-paper': 'Conference paper', 'proceedings-article': 'Conference paper',
     'book-chapter': 'Book chapter', dataset: 'Dataset', 'data-set': 'Dataset',
-    preprint: 'Preprint', dissertation: 'Thesis', review: 'Review',
+    preprint: 'Preprint', 'posted-content': 'Preprint', dissertation: 'Thesis', review: 'Review',
   };
 
   const cleanDoi = (d) => (d || '').toLowerCase().replace(/^https?:\/\/(dx\.)?doi\.org\//, '').trim();
@@ -85,15 +87,47 @@
     } catch (e) { return null; }
   }
 
+  /* A new work can take OpenAlex days to index; the DOI registry has its authors from the day it
+     is published. Free, with no daily budget (Zenodo's DataCite DOIs are not in it). */
+  async function crossrefByDoi(doi, fetchImpl) {
+    try {
+      const r = await fetchImpl(`https://api.crossref.org/works/${encodeURIComponent(doi)}`);
+      return r.ok ? (await r.json()).message || null : null;
+    } catch (e) { return null; }
+  }
+  function fromCrossref(o, m) {
+    const parts = ((m.posted || m['published-online'] || m['published-print'] || m.issued || {})['date-parts'] || [[]])[0];
+    const date = parts && parts[0] ? [parts[0], parts[1] || 1, parts[2] || 1].map((v, i) => String(v).padStart(i ? 2 : 4, '0')).join('-') : '';
+    return {
+      doi: o.doi,
+      doiAlt: null,
+      url: `https://doi.org/${o.doi}`,
+      title: fixText((m.title || [])[0] || o.title),
+      year: parts && parts[0] ? +parts[0] : o.year,
+      date: date || (o.year ? `${o.year}-01-01` : ''),
+      type: TYPES[m.subtype || m.type] || TYPES[o.type] || 'Publication',
+      venue: fixText((m['container-title'] || [])[0] || ((m.institution || [])[0] || {}).name || o.venue),
+      authors: (m.author || []).map((a) => {
+        const name = alias(fixText(a.name || [a.given, a.family].filter(Boolean).join(' ')));
+        const orcid = a.ORCID ? a.ORCID.replace(/^https?:\/\/orcid\.org\//, '') : null;
+        return { id: null, orcid, name, me: orcid === ORCID || normName(name) === ME_NAME };
+      }),
+      cites: m['is-referenced-by-count'] || 0,
+      citesByYear: [],
+      abstract: fixText((m.abstract || '').replace(/<[^>]+>/g, ' ').replace(/^\s*Abstract\s+/i, '')),
+    };
+  }
+
   /* when OpenAlex cannot be reached (it rate-limits), a work keeps what we knew about it before */
   function remembered(prev) {
     const m = new Map();
     ((prev && prev.works) || []).forEach((w) => { if (w.doi) m.set(w.doi, w); if (w.doiAlt) m.set(w.doiAlt, w); m.set('t:' + (w.title || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 60), w); });
     return m;
   }
-  function merge(orcid, oa, byTitle = new Map(), before = new Map()) {
+  const titleKey = (t) => (t || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 60);
+  const recall = (before, o) => (o.doi && before.get(o.doi)) || before.get('t:' + titleKey(o.title));
+  function merge(orcid, oa, byTitle = new Map(), before = new Map(), byCrossref = new Map()) {
     const byDoi = new Map(oa.map((w) => [cleanDoi(w.doi), w]));
-    const titleKey = (t) => (t || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 60);
     const known = new Set(orcid.map((o) => o.doi).filter(Boolean));
     const knownTitles = new Set(orcid.map((o) => titleKey(o.title)));
     const extras = EXTRA_DOIS.map(cleanDoi)
@@ -101,8 +135,9 @@
       .map((d) => ({ doi: d, title: '', year: null, type: null, venue: '' }));
     return orcid.concat(extras).map((o) => {
       const w = (o.doi && byDoi.get(o.doi)) || byTitle.get(o);
-      const old = !w && ((o.doi && before.get(o.doi)) || before.get('t:' + titleKey(o.title)));
+      const old = !w && recall(before, o);
       if (old) return { ...old, doi: o.doi || old.doi, url: o.doi ? `https://doi.org/${o.doi}` : old.url };
+      if (!w && byCrossref.has(o)) return fromCrossref(o, byCrossref.get(o));
       const authors = w ? w.authorships.map((a) => ({
         id: a.author.id ? a.author.id.split('/').pop() : null,
         orcid: a.author.orcid ? a.author.orcid.replace(/^https?:\/\/orcid\.org\//, '') : null,
@@ -133,17 +168,27 @@
     let oa = [], partial = false;
     try { oa = await openAlexByDoi(dois, fetchImpl); } catch (e) { partial = true; /* ORCID alone still lists the works */ }
     const found = new Set(oa.map((w) => cleanDoi(w.doi)));
-    const missing = orcid.filter((o) => !o.doi || !found.has(o.doi));
-    const byTitle = new Map();
-    if (!partial) (await Promise.all(missing.map((o) => openAlexByTitle(o.title, fetchImpl)))).forEach((w, i) => { if (w) byTitle.set(missing[i], w); });
-    return { fetchedAt: Date.now(), partial, works: merge(orcid, oa, byTitle, remembered(prev)) };
+    // works OpenAlex did not return: keep what we knew; otherwise ask the DOI registry, and only
+    // then search OpenAlex by title (ten times the cost of the lookup above)
+    const before = remembered(prev);
+    const missing = orcid.filter((o) => (!o.doi || !found.has(o.doi)) && !recall(before, o));
+    const byTitle = new Map(), byCrossref = new Map();
+    await Promise.all(missing.map(async (o) => {
+      const c = o.doi && (await crossrefByDoi(o.doi, fetchImpl));
+      if (c) { byCrossref.set(o, c); return; }
+      const w = partial ? null : await openAlexByTitle(o.title, fetchImpl);
+      if (w) byTitle.set(o, w);
+    }));
+    return { fetchedAt: Date.now(), partial, works: merge(orcid, oa, byTitle, before, byCrossref) };
   }
 
   /* --- Co-author graph: me, my papers, and the people on them --- */
   function graph(works) {
     const nodes = [{ key: 'me', kind: 'me', name: 'Shakil Ahmed', papers: [] }];
-    const people = new Map();
+    // one node per person: matched by ORCID first, since sources spell names differently
+    const byOrcid = new Map(), byName = new Map();
     const links = [];
+    let people = 0;
     works.forEach((w, wi) => {
       const pk = 'w' + wi;
       nodes.push({ key: pk, kind: 'paper', work: w, name: w.title, year: w.year });
@@ -151,19 +196,22 @@
       nodes[0].papers.push(w);
       w.authors.forEach((a) => {
         if (a.me) return;
-        const k = 'p:' + normName(a.name);
-        if (!people.has(k)) {
-          const n = { key: k, kind: 'person', name: a.name, papers: [] };
-          people.set(k, n);
+        const nk = normName(a.name);
+        let n = (a.orcid && byOrcid.get(a.orcid)) || byName.get(nk);
+        if (!n) {
+          n = { key: 'p:' + nk, kind: 'person', name: a.name, papers: [] };
           nodes.push(n);
+          people++;
         }
-        const n = people.get(k);
-        if (!n.papers.includes(w)) n.papers.push(w);
+        if (a.orcid) byOrcid.set(a.orcid, n);
+        byName.set(nk, n);
+        if (n.papers.includes(w)) return;
+        n.papers.push(w);
         n.orcid = n.orcid || a.orcid; n.id = n.id || a.id;
-        links.push({ a: k, b: pk });
+        links.push({ a: n.key, b: pk });
       });
     });
-    return { nodes, links, people: people.size };
+    return { nodes, links, people };
   }
 
   /* --- Browser loader: snapshot → cache → live --- */

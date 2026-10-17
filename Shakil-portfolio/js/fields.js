@@ -611,7 +611,6 @@ SA.fields = (() => {
      A camera's iris, drawn in points like a technical drawing: the opening the portrait
      stands in, the curved edges of nine blades, their fine shading, the focus rings and the
      scale on the barrel. The opening breathes and the focus ring turns (engine.js anim 8).
-     The same lens comes back, smaller, under the e-mail address at the end of the page.
      Each point stores x: where along its line, y: a second coordinate, z: the part
      (0 opening, 1 blade edge, 2 blade shading, 3 ring, 4 tick), w: 0 or hidden. */
   function aperture(nT, { density = 1 } = {}) {

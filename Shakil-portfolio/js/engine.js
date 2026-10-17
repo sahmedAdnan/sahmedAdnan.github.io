@@ -30,8 +30,8 @@ window.SA = window.SA || {};
   uniform vec3  uChan[3];
   uniform vec3  uPal[7];
   uniform vec3  uHot;
-  uniform vec2  uTer[2];                  // centring offsets: the network at the end, the landscape
-  uniform vec2  uTrail[4];                // the lamp (thesis) or the kernel (end), now and a moment ago
+  uniform vec2  uTer[2];
+  uniform vec2  uTrail[4];                // the lamp (thesis) or the pointer (end), now and a moment ago
   uniform vec4  uClk[4];                  // seconds each scene has been on screen
   uniform vec4  uCent[8];                 // cluster centres in feature space
   uniform vec4  uSlot[8];                 // where each named specimen lies in the drawer

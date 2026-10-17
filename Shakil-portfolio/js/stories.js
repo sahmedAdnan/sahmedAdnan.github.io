@@ -6,6 +6,13 @@
 window.SA = window.SA || {};
 
 SA.stories = {
+  '10.64898/2026.10.15.759340': {
+    short: 'Clustering and zero-shot labelling',
+    venue: 'bioRxiv',
+    figure: 'assets/opt/pub-framework.webp',
+    alt: 'Framework overview: images and a list of candidate species pass through image and text encoders, the image features are reduced and clustered, clusters are named zero-shot, and an uncertainty score sorts the images into confidence tiers for expert review',
+    story: 'Camera traps and other automatic monitors now take far more pictures of insects and birds than experts can identify by hand. We built a way to sort these pictures without training a new model. We use a pretrained foundation model to group similar pictures and to suggest a species name for each one, chosen from the species expected in the collection. Each picture also gets a score for how certain the result is, so experts only need to check the uncertain ones. We tested it on four bird and moth datasets.',
+  },
   '10.1109/asiancomnet63184.2024.10811091': {
     short: 'Choosing an ISP',
     venue: 'ASIANComNet 2024, Bangkok · IEEE',

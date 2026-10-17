@@ -112,7 +112,6 @@
     const tri = await SA.fields.triptych(T, t);
     return { water, caption, tri };
   }
-  /* the end: from seeing to understanding */
   let endNet = null;
   async function buildEnd() {
     endNet = raw.end = SA.fields.visionScene(T, { down: phone.matches });
@@ -132,12 +131,10 @@
   addEventListener('resize', fitEnd);
   document.fonts.ready.then(fitEnd);
   /* ------------------------------------------------------------ the chain of scenes
-     Every scene is generated on its own (raw), then reordered to follow the spatial
-     order of the scene before it (SA.fields.align), so each morph flows from one
-     shape into the next instead of scattering. Re-run whenever an input changes. */
+     Every scene is generated on its own (raw); re-run whenever an input changes.
+     COHERENT reorders each scene to follow the one before (SA.fields.align); off, the
+     points pair up at random and the swarm crosses over between scenes. */
   const raw = {};
-  // reorder each scene to follow the one before (morphs stay local). Off: the points pair up at
-  // random, so between two scenes the swarm crosses over, which is the motion he preferred
   const COHERENT = false;
   const copy = (f) => ({ ...f, data: f.data.slice(), screen: f.screen && f.screen.slice() });
   let chainRun = 0, water = null, tri = null, annot = null;
@@ -623,9 +620,9 @@
     e.setHead(r.left + r.width * 0.5, r.top + r.height * 0.27, r.width * 0.2, txt.right);
   });
 
-  /* ------------------------------------------------------------ the lamp in the light trap, and the kernel at the end
+  /* ------------------------------------------------------------ the lamp in the light trap, and the eye at the end
      In the thesis scene the lamp follows the pointer (or a finger) over the picture and the
-     moths follow it, each a moment behind. */
+     moths follow it, each a moment behind. At the end the eye turns a little toward the pointer. */
   const endSec = $('#contact');
 
   let lampHeld = false, touchPt = null, touchTimer = 0;

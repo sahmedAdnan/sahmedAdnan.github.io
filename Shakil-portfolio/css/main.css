@@ -92,6 +92,25 @@ html.lenis, html.lenis body { height: auto; }
 /* ---------------------------------------------------------- layers */
 .field { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 html.no-gl .field { display: none; }
+/* the page's tone: a faint glow from two corners, over the points and under the content;
+   it tints the paper in the light theme and lights the graphite in the dark one */
+.tone {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; mix-blend-mode: multiply;
+  background: radial-gradient(90% 70% at 8% 0%, oklch(99% 0.025 75) 0%, transparent 65%),
+              radial-gradient(80% 70% at 100% 100%, oklch(91% 0.03 215) 0%, transparent 70%);
+}
+:root[data-theme="dark"] .tone {
+  mix-blend-mode: screen;
+  background: radial-gradient(90% 70% at 8% 0%, oklch(25% 0.04 205) 0%, transparent 65%),
+              radial-gradient(80% 70% at 100% 100%, oklch(24% 0.05 260) 0%, transparent 70%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tone {
+    mix-blend-mode: screen;
+    background: radial-gradient(90% 70% at 8% 0%, oklch(25% 0.04 205) 0%, transparent 65%),
+                radial-gradient(80% 70% at 100% 100%, oklch(24% 0.05 260) 0%, transparent 70%);
+  }
+}
 main { position: relative; z-index: 1; }
 .overlay { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
 .overlay > * { position: absolute; inset: 0; opacity: 0; }
@@ -102,8 +121,7 @@ main { position: relative; z-index: 1; }
 .js .hero__photo { opacity: 0; transition: opacity 0.5s; }
 .js .hero__photo.is-ready { opacity: 1; }
 
-/* face detection drawn over the portrait */
-
+/* overlays that sit on the points: tracking boxes, plate years, species names, network names */
 .trk { position: absolute; left: 0; top: 0; border: 1px solid var(--accent); will-change: transform; }
 .trk::after { content: ''; position: absolute; inset: -5px; border: 1px dashed color-mix(in oklch, var(--accent) 50%, transparent); transition: opacity 0.4s; }
 .trk { transition: border-color 0.4s; }

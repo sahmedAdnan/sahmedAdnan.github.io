@@ -1,5 +1,5 @@
 // Refreshes js/works-snapshot.js, the offline fallback for the publication list.
-// The live site already updates itself from ORCID + OpenAlex; run this
+// The live site already updates itself from ORCID, OpenAlex and Crossref; run this
 // occasionally so the fallback stays close:   node tools/snapshot.mjs
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
