@@ -2,6 +2,8 @@
    Hand-written context for each work, keyed by DOI (lowercase).
    Anything not listed here is still shown, using the opening of
    its abstract, so a new paper never needs an edit to appear.
+   date: when the records give only a year, the real date, so the
+   works keep their order in the list and in the co-author graph.
    ============================================================= */
 window.SA = window.SA || {};
 
@@ -38,6 +40,7 @@ SA.stories = {
   },
   '10.14569/ijacsa.2020.0111188': {
     short: 'Anti-Molestation',
+    date: '2020-11-01',   // the records give only the year; volume 11, issue 11 is the November 2020 issue
     venue: 'IJACSA 11(11)',
     figure: 'assets/opt/pub-antimol.webp',
     alt: 'Prototype hardware: Arduino Pro Mini, SIM800L GSM module, microphone, speaker, battery and panic button',

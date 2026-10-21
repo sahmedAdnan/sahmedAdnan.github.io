@@ -543,68 +543,100 @@ SA.fields = (() => {
     return { data: out, ext: [1, 1] };
   }
 
-  /* ------------------------------------------------ co-author network */
-  function layout(g) {
-    const r = rng(71);
-    const idx = new Map(g.nodes.map((n, i) => [n.key, i]));
-    const P = g.nodes.map((n, i) => {
-      if (n.kind === 'me') return { x: 0, y: 0, vx: 0, vy: 0, fixed: true };
-      const a = (i / g.nodes.length) * TAU;
-      const rad = n.kind === 'paper' ? 0.5 : 1;
-      return { x: Math.cos(a) * rad + (r() - 0.5) * 0.1, y: Math.sin(a) * rad * 0.7 + (r() - 0.5) * 0.1, vx: 0, vy: 0 };
-    });
-    const L = g.links.map((l) => [idx.get(l.a), idx.get(l.b)]);
-    for (let it = 0; it < 600; it++) {
-      for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) {
-        const dx = P[i].x - P[j].x, dy = P[i].y - P[j].y, d2 = dx * dx + dy * dy + 1e-4, f = 0.0025 / d2;
-        P[i].vx += dx * f; P[i].vy += dy * f; P[j].vx -= dx * f; P[j].vy -= dy * f;
-      }
-      for (const [a, b] of L) {
-        const rest = g.nodes[a].kind === 'me' || g.nodes[b].kind === 'me' ? 0.62 : 0.34;
-        const dx = P[b].x - P[a].x, dy = P[b].y - P[a].y, d = Math.hypot(dx, dy) + 1e-4, f = (d - rest) * 0.05;
-        P[a].vx += (dx / d) * f; P[a].vy += (dy / d) * f; P[b].vx -= (dx / d) * f; P[b].vy -= (dy / d) * f;
-      }
-      for (const p of P) {
-        p.vy -= p.y * 0.004;               // flatten into a wide band
-        p.vx *= 0.82; p.vy *= 0.82;
-        if (!p.fixed) { p.x += p.vx; p.y += p.vy; }
-      }
-    }
-    return { P, L };
-  }
-
+  /* ------------------------------------------------ co-author network, along time
+     I am a thread running left to right through my works in the order they appeared. Each work
+     hangs off the thread on a short stem, above and below in turn, with its co-authors fanned out
+     away from the thread; someone on more than one work sits between those works, near the thread.
+     On narrow screens the thread runs down the left of the page with every work on its right, like
+     a timeline. Node 0 is me (works.js graph).
+     nodes[i].lab: where its label goes, 'above', 'below', 'right' or 'left' of it, or 'above-start'
+     (over it, starting at its left edge); a work's title sits clear of its stem and its co-authors.
+     base: a dot's resting colour flag, the works' dots in accent (engine.js colour mode 2). */
   function network(nT, g, { vertical = false } = {}) {
-    const { P, L } = layout(g);
-    if (vertical) P.forEach((p) => { [p.x, p.y] = [p.y * 1.15, p.x * 0.95]; });
-    const out = new Float32Array(nT * 12);
+    const idx = new Map(g.nodes.map((n, i) => [n.key, i]));
+    const L = g.links.map((l) => [idx.get(l.a), idx.get(l.b)]);
+    const works = g.nodes.map((_n, i) => i).filter((i) => g.nodes[i].kind === 'paper')
+      .sort((a, b) => (g.nodes[a].work.date || '').localeCompare(g.nodes[b].work.date || ''));
+    const SPAN = vertical ? 3.4 : 2.5, LIFT = 0.36;
+    const P = g.nodes.map(() => ({ x: 0, y: 0 })), side = new Map();
+    works.forEach((i, k) => {
+      side.set(i, vertical || k % 2 ? 1 : -1);
+      P[i] = { x: works.length > 1 ? -SPAN / 2 + (k * SPAN) / (works.length - 1) : 0, y: side.get(i) * LIFT };
+    });
+    P[0] = { x: -SPAN / 2 - 0.42, y: 0 };
+    // a work's own co-authors fan out away from the thread; shared ones are grouped by their works
+    const ofWork = new Map(works.map((i) => [g.nodes[i].work, i]));
+    const fans = new Map(works.map((i) => [i, []])), groups = new Map();
+    g.nodes.forEach((n, i) => {
+      if (n.kind !== 'person') return;
+      const ws = n.papers.map((w) => ofWork.get(w)).sort((a, b) => a - b);
+      if (ws.length === 1) { fans.get(ws[0]).push(i); return; }
+      const key = ws.join();
+      if (!groups.has(key)) groups.set(key, { ws, members: [] });
+      groups.get(key).members.push(i);
+    });
+    fans.forEach((list, i) => {
+      const n = list.length, rx = 0.28 + 0.025 * n, ry = 0.26 + 0.02 * n, spread = Math.min(2.2, 0.55 * n);
+      list.forEach((j, k) => {
+        // on a phone the fan opens towards the later works, below the title that sits above each work
+        const a = vertical ? 0.15 + (n > 1 ? (k / (n - 1)) * Math.min(1.1, 0.18 * (n - 1)) : 0)
+          : n > 1 ? (k / (n - 1) - 0.5) * spread : 0;
+        P[j] = { x: P[i].x + Math.sin(a) * rx, y: P[i].y + side.get(i) * Math.cos(a) * ry };
+      });
+    });
+    groups.forEach(({ ws, members }) => {
+      const mx = ws.reduce((a, i) => a + P[i].x, 0) / ws.length;
+      let s = ws.every((i) => side.get(i) === side.get(ws[0])) ? side.get(ws[0]) : 0;
+      if (!s) {                                // works on both sides: keep clear of any stem close by
+        const near = works.reduce((b, i) => (Math.abs(P[i].x - mx) < Math.abs(P[b].x - mx) ? i : b), works[0]);
+        s = Math.abs(P[near].x - mx) < 0.2 ? -side.get(near) : 1;
+      }
+      members.forEach((j, k) => { P[j] = { x: mx + (k - (members.length - 1) / 2) * 0.16, y: s * (0.15 + (k % 2) * 0.08) }; });
+    });
+    // centre the picture, and stand it on end for narrow screens
+    const xs = P.map((p) => p.x), mid = (Math.min(...xs) + Math.max(...xs, P[works[works.length - 1]].x + 0.2)) / 2;
+    const pos = (x, y) => (vertical ? [y - 0.75, x - mid] : [x - mid, y]);
+    // the last work has no room on its right: its title goes on its outer side, or left if its own co-authors are there
+    const last = works[works.length - 1];
+    const lastLab = fans.get(last).length ? 'left' : side.get(last) < 0 ? 'above' : 'below';
+    const lab = g.nodes.map((n, i) => (vertical ? (n.kind === 'me' ? 'right' : n.kind === 'paper' ? 'above-start' : 'below')
+      : n.kind === 'me' ? 'above' : n.kind === 'paper' ? (i === last && works.length > 1 ? lastLab : 'right') : P[i].y < 0 ? 'above' : 'below'));
+
+    const out = new Float32Array(nT * 12), base = new Float32Array(nT), owner = new Int32Array(nT);
     const r = rng(83);
-    const owner = new Int32Array(nT);          // node index (≥0) or −(link index + 1)
-    const R = g.nodes.map((n) => (n.kind === 'me' ? 0.085 : n.kind === 'paper' ? 0.05 : 0.022 + 0.006 * n.papers.length));
-    const nodeShare = 0.36;
-    const area = R.map((x) => x * x), areaSum = area.reduce((a, b) => a + b, 0);
+    const R = g.nodes.map((n) => (n.kind === 'me' ? 0.07 : n.kind === 'paper' ? 0.05 : 0.022 + 0.006 * n.papers.length));
     let t = 0;
-    g.nodes.forEach((_n, i) => {
-      const count = Math.round(nT * nodeShare * (area[i] / areaSum));
-      for (let k = 0; k < count && t < nT; k++, t++) {
+    const put = (x, y, z, o, b) => { const [a, c] = pos(x, y); setTriplet(out, t, a, c, z, b); owner[t] = o; base[t] = b; t++; };
+    // the nodes
+    const area = R.map((x) => x * x), areaSum = area.reduce((a, b) => a + b, 0);
+    g.nodes.forEach((n, i) => {
+      const count = Math.round(nT * 0.34 * (area[i] / areaSum));
+      for (let k = 0; k < count && t < nT; k++) {
         const a = r() * TAU, d = Math.sqrt(r()) * R[i];
-        setTriplet(out, t, P[i].x + Math.cos(a) * d, P[i].y + Math.sin(a) * d, (r() - 0.5) * 0.05, 0);
-        owner[t] = i;
+        put(P[i].x + Math.cos(a) * d, P[i].y + Math.sin(a) * d, (r() - 0.5) * 0.05, i, n.kind === 'paper' ? 0.75 : 0);
       }
     });
-    const lens = L.map(([a, b]) => Math.hypot(P[a].x - P[b].x, P[a].y - P[b].y));
-    const lenSum = lens.reduce((a, b) => a + b, 0);
+    // the thread, which is mine
+    const x0 = P[0].x, x1 = P[works[works.length - 1]].x + 0.2, threadN = Math.round(nT * 0.1);
+    for (let k = 0; k < threadN && t < nT; k++) put(x0 + (x1 - x0) * r(), (r() - 0.5) * 0.004, (r() - 0.5) * 0.02, 0, 0);
+    // the links: my link to a work is its stem off the thread
+    const ends = L.map(([a, b]) => (a === 0 ? [{ x: P[b].x, y: 0 }, P[b]] : b === 0 ? [P[a], { x: P[a].x, y: 0 }] : [P[a], P[b]]));
+    const lens = ends.map(([p, q]) => Math.hypot(p.x - q.x, p.y - q.y)), lenSum = lens.reduce((a, b) => a + b, 0);
     const linkT0 = t;
-    L.forEach(([a, b], li) => {
+    ends.forEach(([p, q], li) => {
       const count = li === L.length - 1 ? nT - t : Math.round((nT - linkT0) * (lens[li] / lenSum));
-      for (let k = 0; k < count && t < nT; k++, t++) {
+      for (let k = 0; k < count && t < nT; k++) {
         const s = r(), j = (r() - 0.5) * 0.003;
-        setTriplet(out, t, P[a].x + (P[b].x - P[a].x) * s + j, P[a].y + (P[b].y - P[a].y) * s + j, (r() - 0.5) * 0.02, 0);
-        owner[t] = -(li + 1);
+        put(p.x + (q.x - p.x) * s + j, p.y + (q.y - p.y) * s + j, (r() - 0.5) * 0.02, -(li + 1), 0);
       }
     });
+    const nodes = P.map((p, i) => { const [x, y] = pos(p.x, p.y); return { x, y, r: R[i], lab: lab[i] }; });
     let ex = 0, ey = 0;
-    P.forEach((p, i) => { ex = Math.max(ex, Math.abs(p.x) + R[i]); ey = Math.max(ey, Math.abs(p.y) + R[i]); });
-    return { data: out, ext: [ex + 0.05, ey + 0.08], nodes: P.map((p, i) => ({ x: p.x, y: p.y, r: R[i] })), owner, links: L };
+    nodes.forEach((p) => { ex = Math.max(ex, Math.abs(p.x) + p.r); ey = Math.max(ey, Math.abs(p.y) + p.r); });
+    const [tx, ty] = pos(x1, 0);
+    ex = Math.max(ex, Math.abs(tx)); ey = Math.max(ey, Math.abs(ty));
+    // on a phone the right-hand side keeps room for the works' titles
+    return { data: out, base, ext: vertical ? [Math.max(ex + 0.12, 0.98), ey + 0.1] : [ex + 0.06, ey + 0.14], nodes, owner, links: L };
   }
 
   /* ------------------------------------------------ the hero: a lens around the portrait
@@ -911,7 +943,8 @@ SA.fields = (() => {
     hotLinks.forEach((li) => { nearNodes.add(net.links[li][0]); nearNodes.add(net.links[li][1]); });
     for (let t = 0; t < net.owner.length; t++) {
       const o = net.owner[t];
-      const hot = nodeIndex < 0 ? 0 : o >= 0 ? (o === nodeIndex ? 2 : nearNodes.has(o) ? 1 : -1) : (hotLinks.has(-o - 1) ? 1 : -1);
+      const rest = net.base ? net.base[t] : 0;
+      const hot = nodeIndex < 0 ? rest : o >= 0 ? (o === nodeIndex ? 2 : nearNodes.has(o) ? 1 : -1) : (hotLinks.has(-o - 1) ? 1 : -1);
       for (let ch = 0; ch < 3; ch++) d[(t * 3 + ch) * 4 + 3] = hot;
     }
   }

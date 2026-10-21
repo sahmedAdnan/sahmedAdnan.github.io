@@ -395,17 +395,29 @@
       const p = e.project(S.map, l.x, l.y);
       l.el.style.transform = `translate3d(${p.x + 16}px, ${p.y}px, 0) translateY(-50%)`;
     });
-    // network labels: the more central a name, the more right it has to its place
+    // network labels, on the side away from the thread: the more central a name, the more right it has to its place
     const nv = near(e, S.net, 0.3);
     ovNet.style.opacity = nv;
     if (nv > 0.01 && net) {
       const placed = [];
       net.order.forEach((l) => {
-        const n = net.field.nodes[l.i];
-        const p = e.project(S.net, n.x, n.y + n.r);
-        const x = p.x, y = p.y + 6;
-        l.el.style.transform = `translate3d(${x}px, ${y}px, 0) translateX(-50%)`;
-        const box = [x - l.w / 2 - 4, y - 2, x + l.w / 2 + 4, y + 16];
+        const n = net.field.nodes[l.i], at = n.lab || 'below';
+        let box;
+        if (at === 'above-start') {
+          const p = e.project(S.net, n.x - n.r, n.y - n.r), x = p.x, y = p.y - 5;
+          l.el.style.transform = `translate3d(${x}px, ${y}px, 0) translateY(-100%)`;
+          box = [x - 2, y - 16, x + l.w + 4, y + 2];
+        } else if (at === 'right' || at === 'left') {
+          const s = at === 'right' ? 1 : -1, p = e.project(S.net, n.x + s * n.r, n.y);
+          const x = p.x + s * 8, y = p.y;
+          l.el.style.transform = `translate3d(${x}px, ${y}px, 0) translate(${s > 0 ? '0' : '-100%'}, -50%)`;
+          box = s > 0 ? [x - 2, y - 10, x + l.w + 4, y + 10] : [x - l.w - 4, y - 10, x + 2, y + 10];
+        } else {
+          const up = at === 'above', p = e.project(S.net, n.x, n.y + (up ? -n.r : n.r));
+          const x = p.x, y = up ? p.y - 6 : p.y + 6;
+          l.el.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, ${up ? '-100%' : '0'})`;
+          box = up ? [x - l.w / 2 - 4, y - 16, x + l.w / 2 + 4, y + 2] : [x - l.w / 2 - 4, y - 2, x + l.w / 2 + 4, y + 16];
+        }
         const clash = placed.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1]);
         const show = !clash || l.kind !== 'person' || l.i === hot;
         l.el.classList.toggle('is-hidden', !show);
@@ -574,6 +586,8 @@
   let lastWorks = null;
   function onWorks(data) {
     if (!data || !data.works || !data.works.length) return;
+    data.works.forEach((w) => { const d = story(w).date; if (d) w.date = d; });
+    data.works.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     lastWorks = data.works;
     renderPubs(data.works);
     later(() => {

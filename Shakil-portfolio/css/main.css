@@ -368,7 +368,7 @@ html.no-gl .pubs__plot, html.no-gl .about__map, html.no-gl .contact__vision { di
   .step--intro .step__stage { order: 3; }
   .pub { grid-template-columns: 1fr; gap: 10px; padding-block: 36px; }
   .pub__fig { max-width: 420px; margin-top: 16px; }
-  .coauthors__stage { height: 120vw; max-height: 720px; }
+  .coauthors__stage { height: 200vw; max-height: 1000px; }
   .pubs__head { grid-template-columns: 1fr; }
   .pubs__plot { height: 60vw; max-height: 340px; }
   .about__map { height: 62vw; }
